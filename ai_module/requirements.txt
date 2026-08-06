@@ -1,0 +1,8 @@
+numpy
+Pillow
+requests
+torch
+transformers>=4.44.0
+# rclpy, sensor_msgs, geometry_msgs, nav_msgs, visualization_msgs, std_msgs
+# come from your ROS2 Jazzy install (source /opt/ros/jazzy/setup.bash) --
+# do not pip install these, they must match the system ROS distro.
