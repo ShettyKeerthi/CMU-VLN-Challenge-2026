@@ -9,7 +9,18 @@ lives here rather than scattered through the pipeline.
 # ROS topics (must match README exactly -- these are graded on exact names)
 # ---------------------------------------------------------------------------
 TOPIC_QUESTION = "/challenge_question"          # std_msgs/String, 1 Hz
-TOPIC_IMAGE = "/camera/image"                   # sensor_msgs/Image, 10 Hz, 1920x640, 360 HFOV / 120 VFOV
+# NOTE 2026-08-06: subscribing to the compressed topic directly, NOT the
+# README's documented `/camera/image` (sensor_msgs/Image). Verified against
+# a live sim run that the `sim_image_repub` node responsible for
+# uncompressing `/camera/image/compressed` -> `/camera/image` never
+# actually publishes anything (confirmed alive via `ros2 node info`, matching
+# QoS via `ros2 topic info --verbose` on both ends, real PNG data confirmed
+# flowing on the compressed topic via `ros2 topic echo` -- yet `ros2 topic hz
+# /camera/image` and `ros2 topic echo /camera/image --once` both show zero
+# messages, indefinitely). This looks like a bug in the vendor-shipped
+# iros2026_system image, not anything in our config/QoS. Bypassing it and
+# decoding the PNG ourselves in main_node.py is more robust regardless.
+TOPIC_IMAGE = "/camera/image/compressed"        # sensor_msgs/CompressedImage, PNG, 10 Hz, 1920x640, 360 HFOV / 120 VFOV
 TOPIC_REGISTERED_SCAN = "/registered_scan"      # sensor_msgs/PointCloud2, 5 Hz, map frame
 TOPIC_SENSOR_SCAN = "/sensor_scan"              # sensor_msgs/PointCloud2, 5 Hz, sensor_at_scan frame
 TOPIC_TERRAIN_MAP = "/terrain_map"              # sensor_msgs/PointCloud2, 5 Hz, map frame, 5m around vehicle

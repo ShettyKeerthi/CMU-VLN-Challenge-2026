@@ -14,6 +14,7 @@ first if anything about the real message layout differs from assumptions
 documented there.
 """
 
+import io
 import time
 from enum import Enum, auto
 
@@ -23,7 +24,7 @@ from geometry_msgs.msg import Pose2D
 from nav_msgs.msg import Odometry
 from PIL import Image as PILImage
 from rclpy.node import Node
-from sensor_msgs.msg import Image, PointCloud2
+from sensor_msgs.msg import CompressedImage, PointCloud2
 from std_msgs.msg import Int32, String
 from visualization_msgs.msg import Marker
 
@@ -43,11 +44,14 @@ class State(Enum):
     DONE = auto()
 
 
-def image_msg_to_pil(msg: Image) -> PILImage.Image:
-    arr = np.frombuffer(msg.data, dtype=np.uint8).reshape(msg.height, msg.width, -1)
-    if arr.shape[2] == 4:
-        arr = arr[:, :, :3]
-    return PILImage.fromarray(arr, mode="RGB")
+def image_msg_to_pil(msg: CompressedImage) -> PILImage.Image:
+    """Decode /camera/image/compressed (sensor_msgs/CompressedImage, format='png')
+    directly with PIL. See the NOTE in config.py for why we read the
+    compressed topic instead of the uncompressed /camera/image the README
+    documents -- the repub node bridging the two is not working in the
+    vendor-shipped sim image as of 2026-08-06."""
+    img = PILImage.open(io.BytesIO(bytes(msg.data)))
+    return img.convert("RGB")
 
 
 class VLNChallengeNode(Node):
@@ -68,7 +72,7 @@ class VLNChallengeNode(Node):
         self._waypoint_in_flight = None
 
         self.create_subscription(String, config.TOPIC_QUESTION, self.on_question, 1)
-        self.create_subscription(Image, config.TOPIC_IMAGE, self.on_image, 1)
+        self.create_subscription(CompressedImage, config.TOPIC_IMAGE, self.on_image, 1)
         self.create_subscription(PointCloud2, config.TOPIC_REGISTERED_SCAN, self.on_registered_scan, 1)
         self.create_subscription(PointCloud2, config.TOPIC_TERRAIN_MAP_EXT, self.on_terrain_map, 1)
         self.create_subscription(Odometry, config.TOPIC_STATE_ESTIMATION, self.on_odometry, 5)
@@ -103,7 +107,7 @@ class VLNChallengeNode(Node):
         xyz = pointcloud2_to_xyz_array(msg)
         self.explorer.update_known_cells(xyz)
 
-    def on_image(self, msg: Image):
+    def on_image(self, msg: CompressedImage):
         if self.state not in (State.EXPLORE,):
             return
         self._image_frame_count += 1
@@ -114,7 +118,7 @@ class VLNChallengeNode(Node):
     # ------------------------------------------------------------------
     # Perception -> scene graph
     # ------------------------------------------------------------------
-    def _run_detection(self, image_msg: Image):
+    def _run_detection(self, image_msg: CompressedImage):
         if self.query_spec is None:
             return
         vocabulary = self._build_vocabulary()
