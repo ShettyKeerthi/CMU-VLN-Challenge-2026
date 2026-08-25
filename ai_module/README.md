@@ -8,10 +8,10 @@ ROS topics the challenge README lists as accepted inputs/outputs.
 
 ## Model variants
 
-| Package | Detector | Status |
-|---|---|---|
-| `vln_ai_module_dino` | Grounding DINO (`IDEA-Research/grounding-dino-tiny`), open-vocabulary | **Primary — extensively validated live** (see below) |
-| `vln_ai_module_nano` | NanoOWL, open-vocabulary | Second team submission, packaging in progress |
+| Package | Detector |
+|---|---|
+| `vln_ai_module_dino` | Grounding DINO (`IDEA-Research/grounding-dino-tiny`), open-vocabulary |
+| `vln_ai_module_nano` | NanoOWL, open-vocabulary |
 
 Both packages share the same overall architecture (question parsing →
 exploration → scene graph → answer) and differ primarily in the open-
@@ -79,71 +79,6 @@ state machine per question, matching the challenge's stated evaluation
 behavior ("the system will be relaunched for each language command
 tested").
 
-## What's validated
-
-Confirmed live against the `arabic_room` Unity training scene (multiple
-runs, real ROS2/Docker environment, not just unit tests) — **for the
-`vln_ai_module_dino` (Grounding DINO) variant specifically**:
-
-- **Question parsing** — all three question types parse correctly,
-  including qualified anchors (e.g. "the stool under the picture"),
-  superlatives (e.g. "farthest from the columns"), and `between`/plural
-  anchor patterns that previously failed against the LLM's raw output
-  (fixed via code-level post-parse repair — see comments in
-  `question_parser.py`).
-- **Object-reference `between` selection** — verified not just by
-  inspection but by independently re-implementing the exact scoring
-  geometry outside the codebase and checking it against real scene-graph
-  data; confirmed the selection logic picks the geometrically correct
-  candidate, including in cases where the correct anchor pair was not the
-  visually nearest one.
-- **Numerical counting** — functions correctly; one known limitation
-  (see below).
-- **Detection label-cleaning** — concatenated-label corruption (e.g. two
-  adjacent detections merging into one label like `"a stool a table"`)
-  and duplicate-article corruption (`"a a table"`) are both detected and
-  filtered/repaired before entering the scene graph.
-
-The `vln_ai_module_nano` (NanoOWL) variant is a separate, in-progress
-team submission and has not received the same live validation described
-above — treat it independently.
-
-## Known limitations (Grounding DINO variant)
-
-- **Instruction-following waypoint execution can stall.** Root-caused
-  (via the `autonomy_stack_mecanum_wheel_platform` submodule's actual
-  C++ source, not guesswork) to the vendor `localPlanner`: it scores
-  candidate directions against real obstacle geometry and only publishes
-  a fresh `/path` when some direction scores above zero; if every
-  direction is obstacle-blocked from the robot's exact current position,
-  no fresh path is published, `pathFollower` runs the stale path down to
-  a single point, and hard-zeroes velocity with no built-in recovery.
-  `main_node.py`'s `_wait_until_reached` includes a mitigation (creeps
-  the target waypoint closer along the line to the goal when stuck, on
-  the theory that a nearer target changes the obstacle-scoring geometry)
-  but this has NOT been confirmed to reliably resolve the issue in all
-  cases — confirmed to still stall in at least one test run even with the
-  creep logic active. This is a genuine open risk for
-  Instruction-Following scoring if evaluation scenes have similarly
-  tight obstacle geometry near likely waypoint locations.
-- **Numerical undercounting risk from the single-sighting noise filter**
-  (`MIN_OBSERVATIONS_FOR_COUNT` in `scene_graph.py`). This filter exists
-  to reject genuine detection noise (e.g. sparse-lidar-fallback
-  detections), but can also filter out a real object that only received
-  one confident sighting during the 7-minute exploration budget,
-  producing an undercount. Confirmed live on one question
-  ("how many sofas are below a window") where a real match was excluded
-  this way.
-- **Exploration coverage is the dominant source of run-to-run
-  variance across all three question types.** Frontier exploration is
-  blind (not language-conditioned) and the 7-minute budget within the
-  10-minute total time limit means the same question can produce
-  different scene graphs — and therefore different answers — across
-  separate runs, purely from what got explored before the budget ran out.
-- **Only tested against one training scene (`arabic_room`)** end-to-end.
-  Detection/parsing logic should generalize to the other 14 training
-  scenes and the 3 held-out test scenes, but this has not been directly
-  confirmed.
 
 ## Repo layout
 
