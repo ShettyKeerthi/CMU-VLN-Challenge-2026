@@ -15,9 +15,7 @@ ROS topics the challenge README lists as accepted inputs/outputs.
 
 Both packages share the same overall architecture (question parsing →
 exploration → scene graph → answer) and differ primarily in the open-
-vocabulary object detector used for perception. `vln_ai_module_dino` is
-the version that received the majority of live testing, debugging, and
-validation described in this README.
+vocabulary object detector used for perception. 
 
 ```bash
 # Grounding DINO variant (primary, validated)
