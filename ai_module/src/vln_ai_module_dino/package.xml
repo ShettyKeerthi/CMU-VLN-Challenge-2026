@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>vln_ai_module_dino</name>
+  <version>0.1.0</version>
+  <description>CMU VLN Challenge 2026 AI module: perception, scene graph, question parsing, and navigation for numerical / object-reference / instruction-following questions.</description>
+  <maintainer email="keerthi@example.com">Keerthi Shetty</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_python</buildtool_depend>
+
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>visualization_msgs</depend>
+
+  <!-- Python ML dependencies (numpy, Pillow, transformers, torch, requests)
+       are installed via requirements.txt in the Docker build, not rosdep --
+       they aren't standard rosdep keys and pinning them here would fight
+       with pip's own resolver. -->
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>

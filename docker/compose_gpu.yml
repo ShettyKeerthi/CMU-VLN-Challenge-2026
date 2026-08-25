@@ -17,12 +17,13 @@ services:
     tty: true
     deploy:
       resources:
+        limits:
+          memory: 16g
         reservations:
           devices:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-
   ai_module:
     build:
       context: ../ai_module
@@ -33,6 +34,8 @@ services:
     tty: true
     deploy:
       resources:
+        limits:
+          memory: 10g
         reservations:
           devices:
             - driver: nvidia
