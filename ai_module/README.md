@@ -11,29 +11,26 @@ ROS topics the challenge README lists as accepted inputs/outputs.
 | Package | Detector | Status |
 |---|---|---|
 | `vln_ai_module_dino` | Grounding DINO (`IDEA-Research/grounding-dino-tiny`), open-vocabulary | **Primary — extensively validated live** (see below) |
-| `vln_ai_module` | NanoOWL / Owlv2 (`google/owlv2-base-patch16-ensemble`), open-vocabulary | Earlier variant, kept for comparison |
+| `vln_ai_module_nano` | NanoOWL, open-vocabulary | Second team submission, packaging in progress |
 
 Both packages share the same overall architecture (question parsing →
 exploration → scene graph → answer) and differ primarily in the open-
 vocabulary object detector used for perception. `vln_ai_module_dino` is
 the version that received the majority of live testing, debugging, and
-validation described in this README; `vln_ai_module` reflects an earlier
-development stage using NanoOWL/Owlv2 instead of Grounding DINO.
-
-To launch a specific variant, use its own launch file:
+validation described in this README.
 
 ```bash
-# Grounding DINO variant (primary)
+# Grounding DINO variant (primary, validated)
 ros2 launch vln_ai_module_dino vln_ai_module_dino.launch.py
 
-# NanoOWL/Owlv2 variant
-ros2 launch vln_ai_module vln_ai_module.launch.py
+# NanoOWL variant
+ros2 launch vln_ai_module_nano vln_ai_module_nano.launch.py
 ```
 
 ## Architecture (shared by both variants)
 
 - **Detection**: open-vocabulary object detector (Grounding DINO or
-  NanoOWL/Owlv2 depending on variant), run per-tile across the 360°
+  NanoOWL depending on variant), run per-tile across the 360°
   equirectangular camera image.
 - **Question parsing**: local LLM (Ollama, `llama3.2`) turns the natural-
   language question into a structured spec (target category, attributes,
@@ -107,9 +104,9 @@ runs, real ROS2/Docker environment, not just unit tests) — **for the
   and duplicate-article corruption (`"a a table"`) are both detected and
   filtered/repaired before entering the scene graph.
 
-The `vln_ai_module` (NanoOWL/Owlv2) variant has not received the same
-level of live validation this session — treat it as an earlier-stage,
-less-tested alternative.
+The `vln_ai_module_nano` (NanoOWL) variant is a separate, in-progress
+team submission and has not received the same live validation described
+above — treat it independently.
 
 ## Known limitations (Grounding DINO variant)
 
@@ -152,31 +149,30 @@ less-tested alternative.
 
 ```
 ai_module/
-├── docker/Dockerfile       # bakes in Ollama+llama3.2, Grounding DINO,
-│                           # and Owlv2 weights so the container needs no
-│                           # network access at grading time
+├── docker/Dockerfile        # bakes in Ollama+llama3.2 and detector
+│                            # weights so the container needs no network
+│                            # access at grading time
 ├── requirements.txt
 └── src/
-    ├── dummy_vlm/          # original challenge reference implementation,
-    │                       # kept as-is for reference/fallback
-    ├── vln_ai_module/      # NanoOWL/Owlv2 variant
-    │   └── vln_ai_module/
-    │       ├── main_node.py
-    │       ├── question_parser.py
-    │       ├── scene_graph.py
-    │       ├── exploration.py
-    │       ├── path_planner.py
-    │       ├── perception.py
-    │       ├── ros_utils.py
-    │       └── config.py
-    └── vln_ai_module_dino/ # Grounding DINO variant (primary submission)
-        └── vln_ai_module_dino/
-            ├── main_node.py       # ROS2 node, state machine, answering
-            ├── question_parser.py # LLM + rule-based fallback parsing
-            ├── scene_graph.py     # object accumulation + relation scoring
-            ├── exploration.py     # frontier exploration
-            ├── path_planner.py    # instruction_following waypoint sequencing
-            ├── perception.py      # Grounding DINO wrapper
-            ├── ros_utils.py       # message conversion, 3D localization
-            └── config.py          # topic names, thresholds, tuning constants
+    ├── dummy_vlm/           # original challenge reference implementation,
+    │                        # kept as-is for reference/fallback
+    ├── vln_ai_module_dino/  # Grounding DINO variant (primary submission)
+    │   └── vln_ai_module_dino/
+    │       ├── main_node.py       # ROS2 node, state machine, answering
+    │       ├── question_parser.py # LLM + rule-based fallback parsing
+    │       ├── scene_graph.py     # object accumulation + relation scoring
+    │       ├── exploration.py     # frontier exploration
+    │       ├── path_planner.py    # instruction_following waypoint sequencing
+    │       ├── perception.py      # Grounding DINO wrapper
+    │       ├── ros_utils.py       # message conversion, 3D localization
+    │       └── config.py          # topic names, thresholds, tuning constants
+    └── vln_ai_module_nano/  # NanoOWL variant (second team submission)
+        ├── main_node.py
+        ├── question_parser.py
+        ├── scene_graph.py
+        ├── exploration.py
+        ├── path_planner.py
+        ├── perception.py
+        ├── ros_utils.py
+        └── config.py
 ```
